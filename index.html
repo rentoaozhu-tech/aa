@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タスク完了システム</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+            background-color: #1e293b;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+            text-align: center;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #f1f5f9;
+        }
+
+        p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .timer-display {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #38bdf8;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffffff;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #334155;
+            color: #64748b;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* 広告リストスタイル */
+        .ad-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .ad-card {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ad-info h3 {
+            font-size: 1rem;
+            color: #e2e8f0;
+            margin-bottom: 4px;
+        }
+
+        .ad-info p {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 0;
+        }
+
+        .ad-btn {
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background-color: #38bdf8;
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .ad-btn:hover {
+            background-color: #7dd3fc;
+        }
+
+        .ad-btn.visited {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+
+        /* キー表示スタイル */
+        .key-box {
+            background-color: #0f172a;
+            border: 2px dashed #38bdf8;
+            border-radius: 12px;
+            padding: 20px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: #4ade80;
+            margin: 20px 0;
+            word-break: break-all;
+            user-select: all;
+        }
+
+        .toast {
+            display: none;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #4ade80;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 画面1: 30秒待機画面 -->
+    <div id="screen1" class="screen active">
+        <h2>アクセス準備中</h2>
+        <p>画面を開いたまま30秒間お待ちください。<br>カウントダウン終了後に次へ進めます。</p>
+        <div id="timer1" class="timer-display">30</div>
+        <button id="btn1" class="btn" disabled onclick="goToScreen(2)">次へ進む</button>
+    </div>
+
+    <!-- 画面2: 広告視聴画面 -->
+    <div id="screen2" class="screen">
+        <h2>広告の確認</h2>
+        <p>各広告ボタンを押してサイトを開いてください。<br>全体の待機時間が終了すると進めます。</p>
+        
+        <div id="timer2" class="timer-display">115</div>
+
+        <div class="ad-list">
+            <div class="ad-card">
+                <div class="ad-info">
+                    <h3>広告 1</h3>
+                    <p>推奨閲覧時間: 15秒</p>
+                </div>
+                <button class="ad-btn" onclick="openAd(1)">広告を開く</button>
+            </div>
+
+            <div class="ad-card">
+                <div class="ad-info">
+                    <h3>広告 2</h3>
+                    <p>推奨閲覧時間: 30秒</p>
+                </div>
+                <button class="ad-btn" onclick="openAd(2)">広告を開く</button>
+            </div>
+
+            <div class="ad-card">
+                <div class="ad-info">
+                    <h3>広告 3</h3>
+                    <p>推奨閲覧時間: 1分 (60秒)</p>
+                </div>
+                <button class="ad-btn" onclick="openAd(3)">広告を開く</button>
+            </div>
+
+            <div class="ad-card">
+                <div class="ad-info">
+                    <h3>広告 4</h3>
+                    <p>推奨閲覧時間: 10秒</p>
+                </div>
+                <button class="ad-btn" onclick="openAd(4)">広告を開く</button>
+            </div>
+        </div>
+
+        <button id="btn2" class="btn" disabled onclick="goToScreen(3)">完了してキーを取得</button>
+    </div>
+
+    <!-- 画面3: キー表示画面 -->
+    <div id="screen3" class="screen">
+        <h2>キーの発行完了</h2>
+        <p>以下の生成されたキーをコピーしてご利用ください。</p>
+        
+        <div id="keyDisplay" class="key-box">Kyuuri-XXXX-XXX-tyoko</div>
+        
+        <button class="btn" onclick="copyKey()">キーをコピーする</button>
+        <div id="toast" class="toast">クリップボードにコピーしました！</div>
+    </div>
+</div>
+
+<script>
+    // ランダムな広告先URLの候補
+    const adUrls = [
+        'https://www.google.com',
+        'https://www.yahoo.co.jp',
+        'https://www.wikipedia.org',
+        'https://github.com',
+        'https://www.bing.com',
+        'https://duckduckgo.com'
+    ];
+
+    let currentScreen = 1;
+
+    // 画面1のタイマー設定 (30秒)
+    let time1 = 30;
+    const timer1Elem = document.getElementById('timer1');
+    const btn1Elem = document.getElementById('btn1');
+
+    const countdown1 = setInterval(() => {
+        time1--;
+        timer1Elem.textContent = time1;
+        if (time1 <= 0) {
+            clearInterval(countdown1);
+            btn1Elem.disabled = false;
+            btn1Elem.textContent = "次へ進む";
+        }
+    }, 1000);
+
+    // 画面2のタイマー設定 (15+30+60+10 = 115秒)
+    let time2 = 115;
+    let timer2Started = false;
+    let countdown2 = null;
+    const timer2Elem = document.getElementById('timer2');
+    const btn2Elem = document.getElementById('btn2');
+
+    function startTimer2() {
+        if (timer2Started) return;
+        timer2Started = true;
+
+        countdown2 = setInterval(() => {
+            time2--;
+            timer2Elem.textContent = time2;
+            if (time2 <= 0) {
+                clearInterval(countdown2);
+                btn2Elem.disabled = false;
+                btn2Elem.textContent = "完了してキーを取得";
+            }
+        }, 1000);
+    }
+
+    // 広告ボタンを押した時の処理
+    function openAd(index) {
+        // タイマーが未始動なら開始
+        startTimer2();
+
+        // ボタンの見た目を更新
+        const btns = document.querySelectorAll('.ad-btn');
+        if (btns[index - 1]) {
+            btns[index - 1].classList.add('visited');
+            btns[index - 1].textContent = "閲覧中/完了";
+        }
+
+        // ランダムなURLを別タブで開く
+        const randomUrl = adUrls[Math.floor(Math.random() * adUrls.length)];
+        window.open(randomUrl, '_blank');
+    }
+
+    // 画面遷移関数
+    function goToScreen(screenNum) {
+        document.getElementById(`screen${currentScreen}`).classList.remove('active');
+        currentScreen = screenNum;
+        document.getElementById(`screen${currentScreen}`).classList.add('active');
+
+        if (screenNum === 3) {
+            generateFinalKey();
+        }
+    }
+
+    // 指定形式のキー生成 (Kyuuri-XXXX-XXX-tyoko)
+    function generateFinalKey() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        
+        function getRandomString(length) {
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        const part1 = getRandomString(4);
+        const part2 = getRandomString(3);
+        const generatedKey = `Kyuuri-${part1}-${part2}-tyoko`;
+
+        document.getElementById('keyDisplay').textContent = generatedKey;
+    }
+
+    // キーコピー機能
+    function copyKey() {
+        const keyText = document.getElementById('keyDisplay').textContent;
+        navigator.clipboard.writeText(keyText).then(() => {
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2000);
+        });
+    }
+</script>
+
+</body>
+</html>
